@@ -39,18 +39,6 @@ jobs:
           sw_vers
           kmutil inspect
 
-      # - name: Cache JSONDB
-      #   id: cache-jsondb
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: .cache/${{ matrix.macos-version }}/compile_commands.json
-      #     key: ${{ matrix.macos-version }}-jsondb
-
-      # - name: Build XNU JSON compilation database
-      #   if: steps.cache-jsondb.outputs.cache-hit != 'true'
-      #   run: |
-      #     MACOS_VERSION='${{ matrix.macos-version }}' MACHINE_CONFIG=VMAPPLE JSONDB=1 bash -x build.sh
-
       - name: Build XNU
         run: |
           MACOS_VERSION='${{ matrix.macos-version }}' MACHINE_CONFIG=VMAPPLE KC_FILTER='com.apple.driver.SEPHibernation|com.apple.iokit.IOACPIFamily' bash -x build.sh
@@ -66,24 +54,3 @@ jobs:
           path: |
             fakeroot/System/Library/Kernels/
             # fakeroot/oss-xnu.macOS.${{ matrix.macos-version }}.kc.vmapple
-
-      - name: Build XNU CodeQL Database
-        run: |
-          MACOS_VERSION='${{ matrix.macos-version }}' MACHINE_CONFIG=VMAPPLE bash -x codeql.sh
-          echo "$(shasum -a 256 xnu-codeql.zip)"
-          shasum -a 256 xnu-codeql.zip > xnu-codeql.zip.sha256
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: xnu-codeql-${{ matrix.macos-version }}
-          path: xnu-codeql.zip
-
-      - name: Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          ls -lah
-          gh release upload v${{ matrix.macos-version }} --clobber kernel.release.vmapple
-          gh release upload v${{ matrix.macos-version }} --clobber kernel.release.vmapple.sha256
-          gh release upload v${{ matrix.macos-version }} --clobber xnu-codeql.zip
-          gh release upload v${{ matrix.macos-version }} --clobber xnu-codeql.zip.sha256
